@@ -22,10 +22,10 @@ class Smarto(object):
                         mineDistance = other.distance_to(mine)
                         
                         #am I the closests/equal closest? and is no fleet heading to it atm?
-                        #
                         if not self.hasIncoming(other, gameinfo) and not self.hasCloserPlanet(gameinfo, mine, mineDistance, other):
 
                             #can I take it quicker than previous opponent planet?
+                            #TODO take into account growth rate, cost effeciency
                             if closestTakeable == None or closestTakeDistance > mineDistance:
                                 #make it the best option
                                 closestTakeable = other
@@ -40,10 +40,12 @@ class Smarto(object):
 
                     #defensive from this planet, assuming offensive action not taken
                     if(not attacking):
+                        #TODO be less defensive of a given planet if it hasn't been scouted by the enemy
                         #loop through ally planets
                         lowest = None
                         shipNumLow = 99999999
                         MineNeighbors = self.returnAllyNeighbors(gameinfo, mine)
+                        #TODO replace gameinfo.my_planets.values() with MineNeighbors
                         for allies in gameinfo.my_planets.values():
                             #lowest num AND has no fleet heading to it AND difference > 10
                             #TODO make the mine planet only reinforce neighbors

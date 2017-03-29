@@ -38,7 +38,6 @@ class Entity(object):
         dx = self.x - other.x
         dy = self.y - other.y
         if self.x == other.x and self.y == other.y:
-            print("uh oh") #TODO remove
         return sqrt(dx * dx + dy * dy)
 
     def remove_ships(self, num_ships):
