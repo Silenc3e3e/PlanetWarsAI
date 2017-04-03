@@ -57,8 +57,6 @@ class Smarto(object):
                                 and mineShips - allies.num_ships > 10):
                                 lowest = allies
                                 shipNumLow=lowest.num_ships
-                            elif(self.hasIncoming(allies, gameinfo)):
-                                print("Has Reinforcements")#TODO remove
                         if lowest!=None:
                             amount = math.ceil((mineShips -lowest.num_ships)/2)
                             #print("Reinforce A: $s to B: $s with $s", str(mine.num_ships), str(lowest.num_ships), str(amount)) #TODO remove
@@ -94,7 +92,7 @@ class Smarto(object):
                             skip = True
                         #if quicker to get to examined planet by new found planet
                         #REPHRASE: is it quicker to get to this planet we are examining via ally planet
-                        elif minePlanet.distance_to(ally) < minePlanet.distance_to(item):
+                        else:
                             #removed said examined planet (but do not add to examined planets here)
                             removePlanets.append(item)
                 for planet in removePlanets:
@@ -102,10 +100,8 @@ class Smarto(object):
                 if(not skip):
                     #add ally to examined planets
                     examinedPlanets.append(ally)
-            else:
-                print("working") #TODO remove this line
         #TODO remove the debug below
-        if len(examinedPlanets) >= 2:
+        if len(examinedPlanets) >= 2 and False:
             print("minePlanet: %s examined planets are:" % (minePlanet.id))
             for examine in examinedPlanets:
                 print("Planet id: %s" % examine.id)
