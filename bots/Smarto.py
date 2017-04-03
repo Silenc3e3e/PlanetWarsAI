@@ -77,24 +77,38 @@ class Smarto(object):
             return True
         return False
     def returnAllyNeighbors(self, gameinfo, minePlanet):
+        print("-"*40)
+        print("-"*40)
         examinedPlanets = []
         #foreach unexamined ally planet
         for ally in gameinfo.my_planets.values():
+            for ex in examinedPlanets:
+                print ("minePlanet:%s ally: %s examined:%s" % (minePlanet.id, ally.id, ex.id))
             if not self.checkEntitySame(minePlanet, ally):
+                #print("-"*40)
                 removePlanets = []
                 skip = False
                 #go through all examined ally planets
                 for item in examinedPlanets:
-                    if ally.distance_to(item) < minePlanet.distance_to(item):
+                    mineToItem = minePlanet.distance_to(item)
+                    allyToItem = ally.distance_to(item)
+                    if ally.distance_to(item) < mineToItem:
+                        #print ("%s is < %s" % (allyToItem, mineToItem))#TODO remove
                         #if quicker (or equal to) to get to this planet by an examined planet
-                        if (minePlanet.distance_to(item) < minePlanet.distance_to(ally)):
+                        if (mineToItem < minePlanet.distance_to(ally)):
+                            #print ("%s is < %s" % (mineToItem, minePlanet.distance_to(ally)))#TODO remove
                             #skip this ally planet
                             skip = True
                         #if quicker to get to examined planet by new found planet
                         #REPHRASE: is it quicker to get to this planet we are examining via ally planet
                         else:
+                            #print ("%s is NOT < %s" % (mineToItem, minePlanet.distance_to(ally))) #TODO remove
                             #removed said examined planet (but do not add to examined planets here)
                             removePlanets.append(item)
+                    else: #TODO remove
+                        #print ("%s is NOT < %s" % (allyToItem, mineToItem))
+                        #print("planet minePlanet:%s planet ally:%s planet item:%s" % (minePlanet.id, ally.id, item.id))
+                        skip = true
                 for planet in removePlanets:
                     examinedPlanets.remove(planet)
                 if(not skip):
@@ -106,5 +120,6 @@ class Smarto(object):
             for examine in examinedPlanets:
                 print("Planet id: %s" % examine.id)
             input("Continue")
-
+        for ex in examinedPlanets:
+                print ("FINAL minePlanet:%s ally: %s examined:%s" % (minePlanet.id, ally.id, ex.id))
         return examinedPlanets
