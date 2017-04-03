@@ -348,7 +348,7 @@ class PlanetWarsWindow(window.Window):
 
 
 if __name__ == '__main__':
-    mapSelection = './maps/map'+str(random.randrange(0,100))+'.txt'
+    mapSelection = './maps/map44.txt'#'+str(random.randrange(0,100))+'.txt'
     gamestate = open(mapSelection).read()
     players = ['Rando', 'Smarto']
     window = PlanetWarsWindow(gamestate=gamestate, players=players, max_game_length=2000)

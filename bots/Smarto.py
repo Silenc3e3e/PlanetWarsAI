@@ -77,13 +77,12 @@ class Smarto(object):
             return True
         return False
     def returnAllyNeighbors(self, gameinfo, minePlanet):
-        print("-"*40)
-        print("-"*40)
         examinedPlanets = []
         #foreach unexamined ally planet
         for ally in gameinfo.my_planets.values():
-            for ex in examinedPlanets:
-                print ("minePlanet:%s ally: %s examined:%s" % (minePlanet.id, ally.id, ex.id))
+            #TODO remove
+            #for ex in examinedPlanets:
+                #print ("minePlanet:%s ally: %s examined:%s" % (minePlanet.id, ally.id, ex.id))
             if not self.checkEntitySame(minePlanet, ally):
                 #print("-"*40)
                 removePlanets = []
@@ -92,34 +91,35 @@ class Smarto(object):
                 for item in examinedPlanets:
                     mineToItem = minePlanet.distance_to(item)
                     allyToItem = ally.distance_to(item)
-                    if ally.distance_to(item) < mineToItem:
-                        #print ("%s is < %s" % (allyToItem, mineToItem))#TODO remove
-                        #if quicker (or equal to) to get to this planet by an examined planet
-                        if (mineToItem < minePlanet.distance_to(ally)):
-                            #print ("%s is < %s" % (mineToItem, minePlanet.distance_to(ally)))#TODO remove
-                            #skip this ally planet
-                            skip = True
-                        #if quicker to get to examined planet by new found planet
-                        #REPHRASE: is it quicker to get to this planet we are examining via ally planet
-                        else:
-                            #print ("%s is NOT < %s" % (mineToItem, minePlanet.distance_to(ally))) #TODO remove
-                            #removed said examined planet (but do not add to examined planets here)
+                    mineToAlly = minePlanet.distance_to(ally)
+                    #if both planets being examined are within 90 degree arc
+                    if(self.AandBwithinC90Degrees(item, ally, minePlanet)):
+                        #mine --> ally --> item > mine --> item * 2
+                        if mineToItem > mineToAlly: #(mineToAlly + allyToItem) > (mineToItem * 2) and mineToItem > allyToItem:
                             removePlanets.append(item)
-                    else: #TODO remove
-                        #print ("%s is NOT < %s" % (allyToItem, mineToItem))
-                        #print("planet minePlanet:%s planet ally:%s planet item:%s" % (minePlanet.id, ally.id, item.id))
-                        skip = true
+                            #TODO REMOVE print("removing item minePlanet.%s ally.%s item.%s mineToAlly=%s allyToItem=%s mineToItem*2=%s" % (minePlanet.id, ally.id, item.id, mineToAlly, allyToItem, mineToItem*2))
+                        #mine --> item --> ally > mine --> ally * 2
+                        elif mineToAlly > mineToItem: #(mineToItem + allyToItem > mineToAlly *2) and mineToAlly > mineToItem:
+                            skip = True
+                            #TODO REMOVE print("removing skip minePlanet.%s ally.%s item.%s mineToItem=%s allyToItem=%s mineToAlly*2=%s" % (minePlanet.id, ally.id, item.id, mineToItem, allyToItem, mineToAlly*2))
                 for planet in removePlanets:
                     examinedPlanets.remove(planet)
                 if(not skip):
                     #add ally to examined planets
                     examinedPlanets.append(ally)
         #TODO remove the debug below
-        if len(examinedPlanets) >= 2 and False:
-            print("minePlanet: %s examined planets are:" % (minePlanet.id))
-            for examine in examinedPlanets:
-                print("Planet id: %s" % examine.id)
-            input("Continue")
-        for ex in examinedPlanets:
-                print ("FINAL minePlanet:%s ally: %s examined:%s" % (minePlanet.id, ally.id, ex.id))
+        #print("minePlanet: %s examined planets are:" % (minePlanet.id))
+        #for examine in examinedPlanets:
+            #print("Planet id: %s" % examine.id)
+            #input("Continue")
+        #for ex in examinedPlanets:
+            #print ("FINAL minePlanet:%s ally: %s examined:%s" % (minePlanet.id, ally.id, ex.id))
         return examinedPlanets
+    def AandBwithinC90Degrees(self, A, B, C):
+        ax = A.x - C.x
+        ay = A.y - C.y
+        bx = B.x - C.x
+        by = B.y - C.y
+        dotprod = ((ax * bx) + (ay * by))
+        #TODO REMOVE print("home is:%s item:%s ally:%s dotprod:%s return:%s" % (C.id, A.id, B.id, dotprod, ((ax * bx) + (ay * by)) > 0))
+        return ((ax * bx) + (ay * by)) > 0
