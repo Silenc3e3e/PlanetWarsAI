@@ -37,8 +37,10 @@ class Entity(object):
             return 0.0
         dx = self.x - other.x
         dy = self.y - other.y
-        if self.x == other.x and self.y == other.y:
-        return sqrt(dx * dx + dy * dy)
+        if self.x != other.x and self.y != other.y:
+            return sqrt(dx * dx + dy * dy)
+        else:
+            return 0
 
     def remove_ships(self, num_ships):
         if num_ships <= 0:

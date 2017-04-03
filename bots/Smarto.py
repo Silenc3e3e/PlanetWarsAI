@@ -87,18 +87,28 @@ class Smarto(object):
                 skip = False
                 #go through all examined ally planets
                 for item in examinedPlanets:
-                    #if quicker (or equal to) to get to this planet by an examined planet
-                    if minePlanet.distance_to(item)+item.distance_to(ally) <= minePlanet.distance_to(ally) and not skip:
-                        #skip this ally planet
-                        skip = True
-                    #if quicker to get to examined planet by new found planet
-                    elif minePlanet.distance_to(ally)+ally.distance_to(item) < minePlanet.distance_to(item):
-                        #removed said examined planet (but do not add to examined planets here)
-                        removePlanets.append(item)
+                    if ally.distance_to(item) < minePlanet.distance_to(item):
+                        #if quicker (or equal to) to get to this planet by an examined planet
+                        if (minePlanet.distance_to(item) < minePlanet.distance_to(ally)):
+                            #skip this ally planet
+                            skip = True
+                        #if quicker to get to examined planet by new found planet
+                        #REPHRASE: is it quicker to get to this planet we are examining via ally planet
+                        elif minePlanet.distance_to(ally) < minePlanet.distance_to(item):
+                            #removed said examined planet (but do not add to examined planets here)
+                            removePlanets.append(item)
                 for planet in removePlanets:
                     examinedPlanets.remove(planet)
                 if(not skip):
                     #add ally to examined planets
                     examinedPlanets.append(ally)
-                
+            else:
+                print("working") #TODO remove this line
+        #TODO remove the debug below
+        if len(examinedPlanets) >= 2:
+            print("minePlanet: %s examined planets are:" % (minePlanet.id))
+            for examine in examinedPlanets:
+                print("Planet id: %s" % examine.id)
+            input("Continue")
+
         return examinedPlanets
