@@ -9,36 +9,52 @@ class Smarto(object):
             #for every planet I own
             for mine in gameinfo.my_planets.values():
                 #as long as the planet I own has at least 10 units
-                if mine.num_ships > 10:
+                if mine.num_ships > 2:
                     #effeciency
                     mineShips = mine.num_ships
                     #offensive from this planet
-                    closestTakeable = None
-                    closestTakeDistance = None
+                    MostCostEffective = None
+                    MostEffecientCostToTake = None
+                    QuickestCostReturn = None
                     attacking = False
 
                     #loop through all other not owned, and attack the closest one if viable
                     for other in gameinfo.not_my_planets.values():
-                        mineDistance = other.distance_to(mine)
+                        mineDistanceToOther = math.ceil(other.distance_to(mine))
                         
                         #am I the closests/equal closest? and is no fleet heading to it atm?
-                        if not self.hasIncoming(other, gameinfo) and not self.hasCloserPlanet(gameinfo, mine, mineDistance, other):
-
+                        if not self.hasIncoming(other, gameinfo) and not self.hasCloserPlanet(gameinfo, mine, other.distance_to(mine), other):
                             #can I take it quicker than previous opponent planet?
                             #TODO take into account growth rate, cost effeciency
-                            if closestTakeable == None or closestTakeDistance > mineDistance:
-                                #make it the best option
-                                closestTakeable = other
-                                closestTakeDistance = mineDistance
-                    if(closestTakeable != None):
-                        if mineShips > 10 and mineShips > closestTakeable.num_ships+1:
-                            attacking = True
+                            
+                            #calculate the number of ships needed to take the planet being examined.
                             additional = 0
-                            if(closestTakeable.owner_id != 0):
-                                additional = math.ceil(mine.distance_to(closestTakeable))*(closestTakeable.growth_rate)
-                            gameinfo.planet_order(mine, closestTakeable, closestTakeable.num_ships+1 + additional )
+                            if(other.owner_id != 0):
+                                additional =mineDistanceToOther*(other.growth_rate)
+                            costToTake = other.num_ships + 1 + additional
+                            
+                            #if "mine" doesn't have enough ships to take planet, how long will it take?
+                            additionalTime = 0
+                            if costToTake > (mineShips+1):
+                                additionalTime = math.ceil((costToTake - mine.num_ships) / mine.growth_rate)
+                            ecenomicReturnTime = math.ceil(costToTake/other.growth_rate) + mineDistanceToOther + additionalTime
+
+
+                            if MostCostEffective == None or QuickestCostReturn > ecenomicReturnTime:
+                                #make it the best option
+                                MostCostEffective = other
+                                QuickestCostReturn = ecenomicReturnTime
+                                MostEffecientCostToTake = costToTake
+                        #else:TODO REMOVE
+                            #print("hasincoming:%s hasCloserPlanet:%s mine.%s other.%s" % (self.hasIncoming(other, gameinfo), self.hasCloserPlanet(gameinfo, mine, mineDistanceToOther, other), mine.id, other.id))
+                    if(MostCostEffective != None):
+                        if mineShips > 2 and mineShips > MostCostEffective.num_ships+1:
+                            attacking = True
+                            
+                            MostEffecientCostToTake = MostEffecientCostToTake + math.floor((mineShips - MostEffecientCostToTake)/2)
+                            gameinfo.planet_order(mine, MostCostEffective, MostEffecientCostToTake)
                             #TODO REMOVE below line
-                            #print("ATTACK. mine.%s closestTakeable.%s closestTakeable.num_ships=%s closestTakeable.growth_rate=%s distancetoclosest=%s additional=%s" % (mine.id, closestTakeable.id, closestTakeable.num_ships,closestTakeable.growth_rate,mine.distance_to(closestTakeable), additional))
+                            #print("ATTACK. mine.%s MostCostEffective.%s MostCostEffective.num_ships=%s MostCostEffective.growth_rate=%s distancetoclosest=%s additional=%s" % (mine.id, MostCostEffective.id, MostCostEffective.num_ships,MostCostEffective.growth_rate,mine.distance_to(MostCostEffective), additional))
 
                     #defensive from this planet, assuming offensive action not taken
                     if(not attacking):
@@ -50,26 +66,28 @@ class Smarto(object):
                         for allies in MineNeighbors:
                             #lowest num AND has no fleet heading to it AND difference > 10
                             #TODO make the mine planet only reinforce neighbors
-                            
+                            growthOnArrival = allies.growth_rate * math.ceil(mine.distance_to(allies))
+                            alliesShipNum = allies.num_ships
+                            alliesCurrentPlusGrowth = alliesShipNum+growthOnArrival
                             if((not self.checkEntitySame(allies, mine))
-                                and (allies.num_ships < shipNumLow or lowest == None)
+                                and (alliesCurrentPlusGrowth < shipNumLow or lowest == None)
                                 and (not self.hasIncoming(allies, gameinfo))
-                                and (mineShips - allies.num_ships) > 10):
+                                and (mineShips - alliesCurrentPlusGrowth) > 10):
                                 lowest = allies
-                                shipNumLow=lowest.num_ships
+                                shipNumLow=alliesCurrentPlusGrowth
                         if lowest!=None:
-                            amount = mineShips - math.ceil((mineShips +lowest.num_ships)/2)
+                            amount = mineShips - math.ceil((mineShips + shipNumLow)/2)
                             #print("Reinforce A: $s to B: $s with $s", str(mine.num_ships), str(lowest.num_ships), str(amount)) #TODO remove
                             if amount > 0:
                                 gameinfo.planet_order(mine, lowest, amount)
-                            else:
+                            else: #TODO remove
                                 print ("amount calc error, negative or 0: %s" % amount)
         pass
     def hasIncoming(self, planet, gameinfo):
         for fleet in gameinfo.my_fleets.values():
             if(self.checkEntitySame(planet, fleet.dest)):
                 return True
-            elif planet.id == fleet.dest.id:
+            elif planet.id == fleet.dest.id: #TODO remove
                 print("hasIncoming same dest. planet = %s fleet.dest = %s ERROR" % (planet.id, fleet.dest.id))
         return False
     def hasCloserPlanet(self, gameinfo, mine, mineDistance, other):
@@ -77,10 +95,11 @@ class Smarto(object):
             if(not self.checkEntitySame(allies, mine)):
                 if other.distance_to(allies)<mineDistance:
                     return True
+        return False
     def checkEntitySame(self, EntityA, EntityB):
         if(EntityA == EntityB or EntityA.id == EntityB.id):
             return True
-        if EntityB.id == EntityA.id:
+        if EntityB.id == EntityA.id: #TODO remove
             print("EntityCheck A.%s B.%s" % (EntityA.id, EntityB.id))
         return False
     def returnAllyNeighbors(self, gameinfo, minePlanet):
@@ -129,4 +148,4 @@ class Smarto(object):
         by = B.y - C.y
         dotprod = ((ax * bx) + (ay * by))
         #TODO REMOVE print("home is:%s item:%s ally:%s dotprod:%s return:%s" % (C.id, A.id, B.id, dotprod, ((ax * bx) + (ay * by)) > 0))
-        return ((ax * bx) + (ay * by)) > 0
+        return (((ax * bx) + (ay * by)) > 0)
