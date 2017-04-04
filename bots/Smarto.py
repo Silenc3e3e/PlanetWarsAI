@@ -35,8 +35,10 @@ class Smarto(object):
                             attacking = True
                             additional = 0
                             if(closestTakeable.owner_id != 0):
-                                additional = math.ceil(mine.distance_to(closestTakeable)*closestTakeable.growth_rate)
+                                additional = math.ceil(mine.distance_to(closestTakeable))*(closestTakeable.growth_rate)
                             gameinfo.planet_order(mine, closestTakeable, closestTakeable.num_ships+1 + additional )
+                            #TODO REMOVE below line
+                            #print("ATTACK. mine.%s closestTakeable.%s closestTakeable.num_ships=%s closestTakeable.growth_rate=%s distancetoclosest=%s additional=%s" % (mine.id, closestTakeable.id, closestTakeable.num_ships,closestTakeable.growth_rate,mine.distance_to(closestTakeable), additional))
 
                     #defensive from this planet, assuming offensive action not taken
                     if(not attacking):
@@ -45,27 +47,30 @@ class Smarto(object):
                         lowest = None
                         shipNumLow = 99999999
                         MineNeighbors = self.returnAllyNeighbors(gameinfo, mine)
-                        #TODO replace gameinfo.my_planets.values() with MineNeighbors
-                        for allies in gameinfo.my_planets.values():
+                        for allies in MineNeighbors:
                             #lowest num AND has no fleet heading to it AND difference > 10
                             #TODO make the mine planet only reinforce neighbors
                             
-                            if((not allies in MineNeighbors)
-                                and (not self.checkEntitySame(allies, mine))
-                                and allies.num_ships < shipNumLow
+                            if((not self.checkEntitySame(allies, mine))
+                                and (allies.num_ships < shipNumLow or lowest == None)
                                 and (not self.hasIncoming(allies, gameinfo))
-                                and mineShips - allies.num_ships > 10):
+                                and (mineShips - allies.num_ships) > 10):
                                 lowest = allies
                                 shipNumLow=lowest.num_ships
                         if lowest!=None:
-                            amount = math.ceil((mineShips -lowest.num_ships)/2)
+                            amount = mineShips - math.ceil((mineShips +lowest.num_ships)/2)
                             #print("Reinforce A: $s to B: $s with $s", str(mine.num_ships), str(lowest.num_ships), str(amount)) #TODO remove
-                            gameinfo.planet_order(mine, lowest, amount)
+                            if amount > 0:
+                                gameinfo.planet_order(mine, lowest, amount)
+                            else:
+                                print ("amount calc error, negative or 0: %s" % amount)
         pass
     def hasIncoming(self, planet, gameinfo):
         for fleet in gameinfo.my_fleets.values():
             if(self.checkEntitySame(planet, fleet.dest)):
                 return True
+            elif planet.id == fleet.dest.id:
+                print("hasIncoming same dest. planet = %s fleet.dest = %s ERROR" % (planet.id, fleet.dest.id))
         return False
     def hasCloserPlanet(self, gameinfo, mine, mineDistance, other):
         for allies in gameinfo.my_planets.values():
@@ -75,6 +80,8 @@ class Smarto(object):
     def checkEntitySame(self, EntityA, EntityB):
         if(EntityA == EntityB or EntityA.id == EntityB.id):
             return True
+        if EntityB.id == EntityA.id:
+            print("EntityCheck A.%s B.%s" % (EntityA.id, EntityB.id))
         return False
     def returnAllyNeighbors(self, gameinfo, minePlanet):
         examinedPlanets = []
