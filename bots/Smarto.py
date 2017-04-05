@@ -6,83 +6,98 @@ class Smarto(object):
     def update(self, gameinfo):
         #do I own at least one planet, with at least one unowned planet remaining?
         if gameinfo.my_planets and gameinfo.not_my_planets:
+            myPlanetsList = gameinfo.my_planets.values()
+            # ShipTotal = 0
+            # for planet in myPlanetsList:
+            #     ShipTotal = ShipTotal + planet.num_ships
+            # MyShipAverageBetweenPlanet = math.floor(ShipTotal / len(myPlanetsList))
+
             #for every planet I own
-            for mine in gameinfo.my_planets.values():
+            for mine in myPlanetsList:
                 #as long as the planet I own has at least 10 units
                 if mine.num_ships > 2:
                     #effeciency
                     mineShips = mine.num_ships
-                    #offensive from this planet
-                    MostCostEffective = None
-                    MostEffecientCostToTake = None
-                    QuickestCostReturn = None
-                    attacking = False
-
-                    #loop through all other not owned, and attack the closest one if viable
-                    for other in gameinfo.not_my_planets.values():
-                        mineDistanceToOther = math.ceil(other.distance_to(mine))
-                        
-                        #am I the closests/equal closest? and is no fleet heading to it atm?
-                        if not self.hasIncoming(other, gameinfo) and not self.hasCloserPlanet(gameinfo, mine, other.distance_to(mine), other):
-                            #can I take it quicker than previous opponent planet?
-                            #TODO take into account growth rate, cost effeciency
-                            
-                            #calculate the number of ships needed to take the planet being examined.
-                            additional = 0
-                            if(other.owner_id != 0):
-                                additional =mineDistanceToOther*(other.growth_rate)
-                            costToTake = other.num_ships + 1 + additional
-                            
-                            #if "mine" doesn't have enough ships to take planet, how long will it take?
-                            additionalTime = 0
-                            if costToTake > (mineShips+1):
-                                additionalTime = math.ceil((costToTake - mine.num_ships) / mine.growth_rate)
-                            ecenomicReturnTime = math.ceil(costToTake/other.growth_rate) + mineDistanceToOther + additionalTime
-
-
-                            if MostCostEffective == None or QuickestCostReturn > ecenomicReturnTime:
-                                #make it the best option
-                                MostCostEffective = other
-                                QuickestCostReturn = ecenomicReturnTime
-                                MostEffecientCostToTake = costToTake
-                        #else:TODO REMOVE
-                            #print("hasincoming:%s hasCloserPlanet:%s mine.%s other.%s" % (self.hasIncoming(other, gameinfo), self.hasCloserPlanet(gameinfo, mine, mineDistanceToOther, other), mine.id, other.id))
-                    if(MostCostEffective != None):
-                        if mineShips > 2 and mineShips > MostCostEffective.num_ships+1:
-                            attacking = True
-                            
-                            MostEffecientCostToTake = MostEffecientCostToTake + math.floor((mineShips - MostEffecientCostToTake)/2)
-                            gameinfo.planet_order(mine, MostCostEffective, MostEffecientCostToTake)
-                            #TODO REMOVE below line
-                            #print("ATTACK. mine.%s MostCostEffective.%s MostCostEffective.num_ships=%s MostCostEffective.growth_rate=%s distancetoclosest=%s additional=%s" % (mine.id, MostCostEffective.id, MostCostEffective.num_ships,MostCostEffective.growth_rate,mine.distance_to(MostCostEffective), additional))
-
+                    
                     #defensive from this planet, assuming offensive action not taken
-                    if(not attacking):
-                        #TODO be less defensive of a given planet if it hasn't been scouted by the enemy
-                        #loop through ally planets
-                        lowest = None
-                        shipNumLow = 99999999
-                        MineNeighbors = self.returnAllyNeighbors(gameinfo, mine)
-                        for allies in MineNeighbors:
-                            #lowest num AND has no fleet heading to it AND difference > 10
-                            #TODO make the mine planet only reinforce neighbors
-                            growthOnArrival = allies.growth_rate * math.ceil(mine.distance_to(allies))
-                            alliesShipNum = allies.num_ships
-                            alliesCurrentPlusGrowth = alliesShipNum+growthOnArrival
-                            if((not self.checkEntitySame(allies, mine))
-                                and (alliesCurrentPlusGrowth < shipNumLow or lowest == None)
-                                and (not self.hasIncoming(allies, gameinfo))
-                                and (mineShips - alliesCurrentPlusGrowth) > 10):
-                                lowest = allies
-                                shipNumLow=alliesCurrentPlusGrowth
-                        if lowest!=None:
-                            amount = mineShips - math.ceil((mineShips + shipNumLow)/2)
-                            #print("Reinforce A: $s to B: $s with $s", str(mine.num_ships), str(lowest.num_ships), str(amount)) #TODO remove
-                            if amount > 0:
-                                gameinfo.planet_order(mine, lowest, amount)
-                            else: #TODO remove
-                                print ("amount calc error, negative or 0: %s" % amount)
+                    if(not self.Attack(gameinfo, mine, mineShips)):
+                        self.Defend(gameinfo, mine, mineShips)
+                       
         pass
+    def Attack(self, gameinfo, rootPlanet, shipsOnPlanet):
+        #offensive from this planet
+        MostCostEffective = None
+        MostEffecientCostToTake = None
+        QuickestCostReturn = None
+
+        #loop through all other not owned, and attack the closest one if viable
+        for other in gameinfo.not_my_planets.values():
+            mineDistanceToOther = math.ceil(other.distance_to(rootPlanet))
+            
+            #am I the closests/equal closest? and is no fleet heading to it atm?
+            if not self.hasIncoming(other, gameinfo) and not self.hasCloserPlanet(gameinfo, rootPlanet, other.distance_to(rootPlanet), other):
+                #can I take it quicker than previous opponent planet?
+                otherGrowthRate = other.growth_rate
+
+                #TODO take into account growth rate, cost effeciency
+                #calculate the number of ships needed to take the planet being examined.
+                additional = 0
+                if(other.owner_id != 0):
+                    additional =mineDistanceToOther * (otherGrowthRate)
+                costToTake = other.num_ships + 1 + additional
+                
+                #if "mine" doesn't have enough ships to take planet, how long will it take?
+                additionalTime = 0
+                mineGrowthRate = rootPlanet.growth_rate
+                if mineGrowthRate == 0:
+                    mineGrowthRate == 0.000000001
+                if costToTake > (shipsOnPlanet+1):
+                    additionalTime = math.ceil((costToTake - shipsOnPlanet) / mineGrowthRate)
+                OtherGrowthRate = otherGrowthRate
+                if OtherGrowthRate == 0:
+                    OtherGrowthRate == 0.000000001
+                ecenomicReturnTime = math.ceil(costToTake / OtherGrowthRate) + mineDistanceToOther + additionalTime
+
+
+                if MostCostEffective == None or QuickestCostReturn > ecenomicReturnTime:
+                    #make it the best option
+                    MostCostEffective = other
+                    QuickestCostReturn = ecenomicReturnTime
+                    MostEffecientCostToTake = costToTake
+            #else:TODO REMOVE
+                #print("hasincoming:%s hasCloserPlanet:%s mine.%s other.%s" % (self.hasIncoming(other, gameinfo), self.hasCloserPlanet(gameinfo, mine, mineDistanceToOther, other), mine.id, other.id))
+        if(MostCostEffective != None):
+            if shipsOnPlanet > 2 and shipsOnPlanet > MostCostEffective.num_ships+1:
+                
+                MostEffecientCostToTake = MostEffecientCostToTake + math.floor((shipsOnPlanet - MostEffecientCostToTake)/2)
+                gameinfo.planet_order(rootPlanet, MostCostEffective, MostEffecientCostToTake)
+                return True
+                #TODO REMOVE below line
+                #print("ATTACK. mine.%s MostCostEffective.%s MostCostEffective.num_ships=%s MostCostEffective.growth_rate=%s distancetoclosest=%s additional=%s" % (mine.id, MostCostEffective.id, MostCostEffective.num_ships,MostCostEffective.growth_rate,mine.distance_to(MostCostEffective), additional))
+
+        return False
+    def Defend(self, gameinfo, rootPlanet, shipsOnPlanet):
+        #TODO be less defensive of a given planet if it hasn't been scouted by the enemy
+        #loop through ally planets
+        lowest = None
+        shipNumLow = 99999999
+        MineNeighbors = self.returnAllyNeighbors(gameinfo, rootPlanet)
+        for allies in MineNeighbors:
+            #lowest num AND has no fleet heading to it AND difference > 10
+            growthOnArrival = allies.growth_rate * math.ceil(rootPlanet.distance_to(allies))
+            alliesShipNum = allies.num_ships
+            alliesCurrentPlusGrowth = alliesShipNum + growthOnArrival
+            if((not self.checkEntitySame(allies, rootPlanet))
+                and (alliesCurrentPlusGrowth < shipNumLow or lowest == None)
+                and (not self.hasIncoming(allies, gameinfo))
+                and (shipsOnPlanet - alliesCurrentPlusGrowth) > 10):
+                lowest = allies
+                shipNumLow=alliesCurrentPlusGrowth
+        if lowest!=None:
+            amount = shipsOnPlanet - math.ceil((shipsOnPlanet + shipNumLow)/2)
+            if amount > 0:
+                gameinfo.planet_order(rootPlanet, lowest, amount)
+
     def hasIncoming(self, planet, gameinfo):
         for fleet in gameinfo.my_fleets.values():
             if(self.checkEntitySame(planet, fleet.dest)):
